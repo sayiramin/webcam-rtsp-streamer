@@ -37,7 +37,7 @@ class Config:
             "name": "Low (450 MHz / Up to 5 Mbps)",
             "width": 640,
             "height": 360,
-            "fps": 20,
+            "fps": 15,
             "bitrate": "800k",
             "preset": "ultrafast",
         },
