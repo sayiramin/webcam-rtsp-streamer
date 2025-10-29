@@ -2,6 +2,37 @@
 
 Convert your laptop webcam into an RTSP streaming server with a simple, user-friendly GUI application.
 
+## How It Works
+
+```
+┌─────────────┐
+│   Webcam    │  Your laptop camera
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   OpenCV    │  Captures raw video frames
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   FFmpeg    │  Encodes to H.264 + optional watermark
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  MediaMTX   │  RTSP server (handles multiple clients)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────┐
+│  VLC, FFplay, or any RTSP   │  Watch from anywhere
+│  compatible player/device   │  rtsp://localhost:8554/stream
+└─────────────────────────────┘
+```
+
+**Full architecture details**: [docs/architecture.md](docs/architecture.md)
+
 ## Features
 
 - 🎥 Stream webcam video over RTSP protocol
