@@ -224,25 +224,35 @@ class RTSPStreamer:
         wm_type = self.config.get("watermark_type", "text")
         wm_position = self.config.get("watermark_position", "top-right")
         
-        # Calculate position coordinates
-        positions = {
-            "top-left": "10:10",
-            "top-right": f"{width}-tw-10:10",
-            "bottom-left": f"10:{height}-th-10",
-            "bottom-right": f"{width}-tw-10:{height}-th-10",
-            "center": f"({width}-tw)/2:({height}-th)/2"
-        }
-        pos = positions.get(wm_position, positions["top-right"])
-        
         if wm_type == "text":
             text = self.config.get("watermark_text", "Camera Stream")
             # Escape special characters for FFmpeg
             text = text.replace(":", "\\:").replace("'", "'").replace("[", "\\[").replace("]", "\\]")
+            
+            # Calculate position coordinates for text (uses tw/th for text width/height)
+            positions = {
+                "top-left": "10:10",
+                "top-right": f"{width}-tw-10:10",
+                "bottom-left": f"10:{height}-th-10",
+                "bottom-right": f"{width}-tw-10:{height}-th-10",
+                "center": f"({width}-tw)/2:({height}-th)/2"
+            }
+            pos = positions.get(wm_position, positions["top-right"])
             return f"drawtext=text='{text}':fontcolor=white:fontsize=24:box=1:boxcolor=black@0.5:boxborderw=5:x={pos.split(':')[0]}:y={pos.split(':')[1]}"
         
         elif wm_type == "timestamp":
             text = self.config.get("watermark_text", "Camera Stream")
             text = text.replace(":", "\\:").replace("'", "'").replace("[", "\\[").replace("]", "\\]")
+            
+            # Calculate position coordinates for text
+            positions = {
+                "top-left": "10:10",
+                "top-right": f"{width}-tw-10:10",
+                "bottom-left": f"10:{height}-th-10",
+                "bottom-right": f"{width}-tw-10:{height}-th-10",
+                "center": f"({width}-tw)/2:({height}-th)/2"
+            }
+            pos = positions.get(wm_position, positions["top-right"])
             # Add timestamp using FFmpeg's text expansion
             return f"drawtext=text='{text} %{{localtime\\:%Y-%m-%d %H\\\\:%M\\\\:%S}}':fontcolor=white:fontsize=20:box=1:boxcolor=black@0.5:boxborderw=5:x={pos.split(':')[0]}:y={pos.split(':')[1]}"
         
@@ -252,7 +262,17 @@ class RTSPStreamer:
             if image_path and os.path.exists(image_path):
                 # Escape path for FFmpeg
                 image_path = image_path.replace("\\", "/").replace(":", "\\:")
-                return f"movie={image_path}[wm];[in][wm]overlay={pos.split(':')[0]}:{pos.split(':')[1]}[out]"
+                
+                # Calculate position coordinates for image (uses w/h for overlay width/height)
+                positions = {
+                    "top-left": "10:10",
+                    "top-right": f"W-w-10:10",
+                    "bottom-left": f"10:H-h-10",
+                    "bottom-right": f"W-w-10:H-h-10",
+                    "center": f"(W-w)/2:(H-h)/2"
+                }
+                pos = positions.get(wm_position, positions["top-right"])
+                return f"movie={image_path}[wm];[in][wm]overlay={pos}[out]"
             else:
                 self._log_status("Warning: Watermark image not found, skipping watermark")
                 return ""
