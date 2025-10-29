@@ -263,6 +263,9 @@ class RTSPStreamer:
                 # Escape path for FFmpeg
                 image_path = image_path.replace("\\", "/").replace(":", "\\:")
                 
+                # Scale watermark to max 20% of video width, maintaining aspect ratio
+                max_width = int(width * 0.2)
+                
                 # Calculate position coordinates for image (uses w/h for overlay width/height)
                 positions = {
                     "top-left": "10:10",
@@ -272,7 +275,9 @@ class RTSPStreamer:
                     "center": f"(W-w)/2:(H-h)/2"
                 }
                 pos = positions.get(wm_position, positions["top-right"])
-                return f"movie={image_path}[wm];[in][wm]overlay={pos}[out]"
+                
+                # Apply scaling filter to watermark and then overlay
+                return f"movie={image_path},scale={max_width}:-1[wm];[in][wm]overlay={pos}[out]"
             else:
                 self._log_status("Warning: Watermark image not found, skipping watermark")
                 return ""
