@@ -88,7 +88,7 @@ class RTSPStreamer:
             return False
     
     def _start_ffmpeg(self, width: int, height: int, fps: int) -> bool:
-        """Start FFmpeg process as RTSP server"""
+        """Start FFmpeg process to publish to MediaMTX RTSP server"""
         try:
             port = self.config.get("rtsp_port", 8554)
             path = self.config.get("rtsp_path", "stream")
@@ -97,7 +97,8 @@ class RTSPStreamer:
             preset = self.config.get("preset", "ultrafast")
             tune = self.config.get("tune", "zerolatency")
             
-            # FFmpeg command to read from stdin and output RTSP
+            # FFmpeg command to read from stdin and publish to RTSP server (MediaMTX)
+            # MediaMTX must be running: brew services start mediamtx
             ffmpeg_cmd = [
                 'ffmpeg',
                 '-f', 'rawvideo',
@@ -136,7 +137,7 @@ class RTSPStreamer:
                 self._log_status(f"FFmpeg failed to start: {stderr}")
                 return False
             
-            self._log_status("FFmpeg RTSP server started")
+            self._log_status("FFmpeg publisher started (requires MediaMTX running)")
             return True
             
         except FileNotFoundError:
@@ -174,7 +175,9 @@ class RTSPStreamer:
                 break
         
         self._log_status("Stream loop ended")
-        self.stop_streaming()
+        # Don't call stop_streaming from within the stream thread
+        # Just set the flag and let cleanup happen from GUI thread
+        self.is_streaming = False
     
     def stop_streaming(self):
         """Stop webcam capture and RTSP streaming"""
@@ -183,9 +186,10 @@ class RTSPStreamer:
         
         self.is_streaming = False
         
-        # Wait for stream thread to finish
+        # Wait for stream thread to finish (only if called from different thread)
         if self.stream_thread and self.stream_thread.is_alive():
-            self.stream_thread.join(timeout=2)
+            if threading.current_thread() != self.stream_thread:
+                self.stream_thread.join(timeout=2)
         
         # Close FFmpeg
         if self.ffmpeg_process:
