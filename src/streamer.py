@@ -263,8 +263,8 @@ class RTSPStreamer:
                 # Escape path for FFmpeg
                 image_path = image_path.replace("\\", "/").replace(":", "\\:")
                 
-                # Scale watermark to max 5% of video width, maintaining aspect ratio
-                max_width = int(width * 0.05)
+                # Scale watermark to max 10% of video width, maintaining aspect ratio
+                max_width = int(width * 0.10)
                 
                 # Calculate position coordinates for image (uses w/h for overlay width/height)
                 positions = {
