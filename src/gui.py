@@ -54,7 +54,24 @@ class StreamerMainWindow(QMainWindow):
         config_group = QGroupBox("Stream Configuration")
         config_layout = QGridLayout()
         
-        config_layout.addWidget(QLabel("Resolution:"), 0, 0)
+        # Quality preset
+        config_layout.addWidget(QLabel("Quality Preset:"), 0, 0)
+        self.quality_preset = QComboBox()
+        from config import Config as ConfigClass
+        for key, preset in ConfigClass.QUALITY_PRESETS.items():
+            self.quality_preset.addItem(preset["name"], key)
+        
+        # Set current preset
+        current_preset = self.config.get("quality_preset", "medium")
+        for i in range(self.quality_preset.count()):
+            if self.quality_preset.itemData(i) == current_preset:
+                self.quality_preset.setCurrentIndex(i)
+                break
+        
+        self.quality_preset.currentIndexChanged.connect(self.on_quality_preset_changed)
+        config_layout.addWidget(self.quality_preset, 0, 1, 1, 2)
+        
+        config_layout.addWidget(QLabel("Resolution:"), 1, 0)
         resolution_layout = QHBoxLayout()
         self.width_spin = QSpinBox()
         self.width_spin.setRange(320, 3840)
@@ -67,24 +84,24 @@ class StreamerMainWindow(QMainWindow):
         self.height_spin.setValue(self.config.get("video_height", 720))
         self.height_spin.setSuffix(" px")
         resolution_layout.addWidget(self.height_spin)
-        config_layout.addLayout(resolution_layout, 0, 1)
+        config_layout.addLayout(resolution_layout, 1, 1)
         
-        config_layout.addWidget(QLabel("FPS:"), 1, 0)
+        config_layout.addWidget(QLabel("FPS:"), 2, 0)
         self.fps_spin = QSpinBox()
         self.fps_spin.setRange(5, 60)
         self.fps_spin.setValue(self.config.get("video_fps", 30))
-        config_layout.addWidget(self.fps_spin, 1, 1)
+        config_layout.addWidget(self.fps_spin, 2, 1)
         
-        config_layout.addWidget(QLabel("RTSP Port:"), 2, 0)
+        config_layout.addWidget(QLabel("RTSP Port:"), 3, 0)
         self.port_spin = QSpinBox()
         self.port_spin.setRange(1024, 65535)
         self.port_spin.setValue(self.config.get("rtsp_port", 8554))
-        config_layout.addWidget(self.port_spin, 2, 1)
+        config_layout.addWidget(self.port_spin, 3, 1)
         
-        config_layout.addWidget(QLabel("RTSP Path:"), 3, 0)
+        config_layout.addWidget(QLabel("RTSP Path:"), 4, 0)
         self.path_edit = QLineEdit()
         self.path_edit.setText(self.config.get("rtsp_path", "stream"))
-        config_layout.addWidget(self.path_edit, 3, 1)
+        config_layout.addWidget(self.path_edit, 4, 1)
         
         config_group.setLayout(config_layout)
         main_layout.addWidget(config_group)
@@ -258,15 +275,34 @@ class StreamerMainWindow(QMainWindow):
         if file_path:
             self.watermark_image.setText(file_path)
     
+    def on_quality_preset_changed(self, index):
+        """Update settings based on quality preset selection"""
+        from config import Config as ConfigClass
+        preset_key = self.quality_preset.itemData(index)
+        preset = ConfigClass.QUALITY_PRESETS.get(preset_key)
+        
+        if preset:
+            self.width_spin.setValue(preset["width"])
+            self.height_spin.setValue(preset["height"])
+            self.fps_spin.setValue(preset["fps"])
+    
     def start_streaming(self):
         """Start streaming"""
         # Update config from UI
         self.config.set("camera_index", self.camera_combo.currentData())
+        self.config.set("quality_preset", self.quality_preset.currentData())
         self.config.set("video_width", self.width_spin.value())
         self.config.set("video_height", self.height_spin.value())
         self.config.set("video_fps", self.fps_spin.value())
         self.config.set("rtsp_port", self.port_spin.value())
         self.config.set("rtsp_path", self.path_edit.text())
+        
+        # Update bitrate based on quality preset
+        from config import Config as ConfigClass
+        preset = ConfigClass.QUALITY_PRESETS.get(self.quality_preset.currentData())
+        if preset:
+            self.config.set("video_bitrate", preset["bitrate"])
+            self.config.set("preset", preset["preset"])
         
         # Update watermark config
         self.config.set("watermark_enabled", self.watermark_enabled.isChecked())

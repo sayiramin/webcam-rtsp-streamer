@@ -21,12 +21,42 @@ class Config:
         "video_bitrate": "2M",
         "preset": "ultrafast",
         "tune": "zerolatency",
+        # Network quality preset
+        "quality_preset": "medium",  # low, medium, high
         # Watermark settings
         "watermark_enabled": False,
         "watermark_type": "text",  # text, image, timestamp
         "watermark_text": "Camera Stream",
         "watermark_image_path": "",
         "watermark_position": "top-right",  # top-left, top-right, bottom-left, bottom-right, center
+    }
+    
+    # Quality presets optimized for different network conditions
+    QUALITY_PRESETS = {
+        "low": {
+            "name": "Low (450 Mbps / Slow Network)",
+            "width": 640,
+            "height": 360,
+            "fps": 15,
+            "bitrate": "500k",
+            "preset": "ultrafast",
+        },
+        "medium": {
+            "name": "Medium (4G / Normal Network)",
+            "width": 1280,
+            "height": 720,
+            "fps": 25,
+            "bitrate": "1500k",
+            "preset": "ultrafast",
+        },
+        "high": {
+            "name": "High (5G / Fast Network)",
+            "width": 1920,
+            "height": 1080,
+            "fps": 30,
+            "bitrate": "3000k",
+            "preset": "fast",
+        },
     }
     
     def __init__(self, config_file: str = "config.json"):
