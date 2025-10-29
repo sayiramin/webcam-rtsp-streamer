@@ -133,6 +133,12 @@ class StreamerMainWindow(QMainWindow):
         log_group.setLayout(log_layout)
         main_layout.addWidget(log_group)
         
+        # Support info
+        support_label = QLabel('Support: sayir.amin@gmail.com')
+        support_label.setStyleSheet("QLabel { color: #666; font-size: 10px; }")
+        support_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(support_label)
+        
         # Connect value change signals to update URL
         self.port_spin.valueChanged.connect(self.update_url_display)
         self.path_edit.textChanged.connect(self.update_url_display)
