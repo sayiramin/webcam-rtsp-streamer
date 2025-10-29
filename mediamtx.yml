@@ -1,0 +1,23 @@
+# MediaMTX configuration for Webcam RTSP Streamer
+
+# RTSP server settings
+rtspAddress: :8554
+rtspTransports: [tcp]
+
+# Allow publishing
+paths:
+  stream:
+    source: publisher
+    sourceOnDemand: no
+
+# Disable unused protocols to avoid port conflicts
+rtmp: no
+hls: no
+webrtc: no
+srt: no
+
+# API disabled
+api: no
+
+# Logging
+logLevel: info

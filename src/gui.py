@@ -25,6 +25,7 @@ class StreamerMainWindow(QMainWindow):
         self.setMinimumSize(600, 500)
         
         self.init_ui()
+        self.streamer._start_mediamtx()  # Start MediaMTX after GUI is ready
         self.load_cameras()
         
     def init_ui(self):
@@ -94,7 +95,7 @@ class StreamerMainWindow(QMainWindow):
         
         self.url_label = QLabel()
         self.url_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.url_label.setStyleSheet("QLabel { background-color: #f0f0f0; padding: 8px; font-family: monospace; }")
+        self.url_label.setStyleSheet("QLabel { background-color: #2d2d2d; color: #ffffff; padding: 10px; font-family: monospace; font-size: 14px; border-radius: 4px; }")
         self.update_url_display()
         url_layout.addWidget(self.url_label)
         
@@ -232,9 +233,10 @@ class StreamerMainWindow(QMainWindow):
             )
             
             if reply == QMessageBox.Yes:
-                self.streamer.stop_streaming()
+                self.streamer.cleanup()
                 event.accept()
             else:
                 event.ignore()
         else:
+            self.streamer.cleanup()
             event.accept()

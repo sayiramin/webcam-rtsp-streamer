@@ -20,6 +20,7 @@ class RTSPStreamer:
         self.capture = None
         self.ffmpeg_process = None
         self.stream_thread = None
+        self.mediamtx_process = None
         
     def _log_status(self, message: str):
         """Log status message via callback if available"""
@@ -27,8 +28,51 @@ class RTSPStreamer:
             self.status_callback(message)
         print(message)
     
+    def _start_mediamtx(self):
+        """Start MediaMTX RTSP server as subprocess"""
+        try:
+            # Check if MediaMTX is installed
+            mediamtx_path = subprocess.check_output(['which', 'mediamtx'], text=True).strip()
+            
+            # Get config file path
+            import os
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'mediamtx.yml')
+            
+            # Start MediaMTX with config file
+            startupinfo = None
+            if platform.system() == 'Windows':
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            
+            self.mediamtx_process = subprocess.Popen(
+                [mediamtx_path, config_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                startupinfo=startupinfo
+            )
+            
+            # Give MediaMTX time to start
+            time.sleep(2)
+            
+            if self.mediamtx_process.poll() is not None:
+                self._log_status("Warning: MediaMTX failed to start")
+                self.mediamtx_process = None
+            else:
+                self._log_status("MediaMTX RTSP server started")
+                
+        except FileNotFoundError:
+            self._log_status("Warning: MediaMTX not found. Install with: brew install mediamtx")
+            self.mediamtx_process = None
+        except Exception as e:
+            self._log_status(f"Warning: Could not start MediaMTX: {e}")
+            self.mediamtx_process = None
+    
     def get_available_cameras(self) -> list:
         """Detect available camera devices"""
+        import os
+        # Suppress OpenCV warnings during camera detection
+        os.environ['OPENCV_LOG_LEVEL'] = 'FATAL'
+        
         cameras = []
         # Test up to 10 camera indices
         for i in range(10):
@@ -36,6 +80,9 @@ class RTSPStreamer:
             if cap.isOpened():
                 cameras.append(i)
                 cap.release()
+        
+        # Restore normal logging
+        os.environ['OPENCV_LOG_LEVEL'] = 'INFO'
         return cameras
     
     def start_streaming(self) -> bool:
@@ -97,8 +144,8 @@ class RTSPStreamer:
             preset = self.config.get("preset", "ultrafast")
             tune = self.config.get("tune", "zerolatency")
             
-            # FFmpeg command to read from stdin and publish to RTSP server (MediaMTX)
-            # MediaMTX must be running: brew services start mediamtx
+            # FFmpeg command to publish to MediaMTX via RTP
+            # MediaMTX will create the RTSP endpoint automatically from the RTP stream
             ffmpeg_cmd = [
                 'ffmpeg',
                 '-f', 'rawvideo',
@@ -106,12 +153,15 @@ class RTSPStreamer:
                 '-video_size', f'{width}x{height}',
                 '-framerate', str(fps),
                 '-i', 'pipe:0',  # Read from stdin
+                '-pix_fmt', 'yuv420p',  # Convert to standard YUV420p format
                 '-c:v', codec,
                 '-preset', preset,
                 '-tune', tune,
                 '-b:v', bitrate,
+                '-an',  # No audio
                 '-f', 'rtsp',
                 '-rtsp_transport', 'tcp',
+                '-muxdelay', '0.1',
                 f'rtsp://localhost:{port}/{path}'
             ]
             
@@ -138,6 +188,18 @@ class RTSPStreamer:
                 return False
             
             self._log_status("FFmpeg publisher started (requires MediaMTX running)")
+            
+            # Start thread to monitor FFmpeg stderr (only log errors/warnings)
+            def monitor_ffmpeg():
+                if self.ffmpeg_process and self.ffmpeg_process.stderr:
+                    for line in self.ffmpeg_process.stderr:
+                        if line:
+                            line_str = line.decode().strip()
+                            # Only log errors and warnings, not info
+                            if any(x in line_str.lower() for x in ['error', 'warning', 'failed']):
+                                self._log_status(f"FFmpeg: {line_str}")
+            
+            threading.Thread(target=monitor_ffmpeg, daemon=True).start()
             return True
             
         except FileNotFoundError:
@@ -207,6 +269,20 @@ class RTSPStreamer:
             self.capture = None
         
         self._log_status("Streaming stopped")
+    
+    def cleanup(self):
+        """Cleanup all resources including MediaMTX"""
+        self.stop_streaming()
+        
+        # Stop MediaMTX
+        if self.mediamtx_process:
+            try:
+                self.mediamtx_process.terminate()
+                self.mediamtx_process.wait(timeout=5)
+                self._log_status("MediaMTX stopped")
+            except:
+                self.mediamtx_process.kill()
+            self.mediamtx_process = None
     
     def get_preview_frame(self) -> Optional[bytes]:
         """Get current frame as JPEG for preview (optional feature)"""
