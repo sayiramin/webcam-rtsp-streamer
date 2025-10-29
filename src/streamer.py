@@ -144,8 +144,7 @@ class RTSPStreamer:
             preset = self.config.get("preset", "ultrafast")
             tune = self.config.get("tune", "zerolatency")
             
-            # FFmpeg command to publish to MediaMTX via RTP
-            # MediaMTX will create the RTSP endpoint automatically from the RTP stream
+            # Build FFmpeg command with optional watermark
             ffmpeg_cmd = [
                 'ffmpeg',
                 '-f', 'rawvideo',
@@ -153,6 +152,17 @@ class RTSPStreamer:
                 '-video_size', f'{width}x{height}',
                 '-framerate', str(fps),
                 '-i', 'pipe:0',  # Read from stdin
+            ]
+            
+            # Add watermark filter if enabled
+            watermark_enabled = self.config.get("watermark_enabled", False)
+            if watermark_enabled:
+                filter_str = self._build_watermark_filter(width, height)
+                if filter_str:
+                    ffmpeg_cmd.extend(['-vf', filter_str])
+            
+            # Continue with encoding settings
+            ffmpeg_cmd.extend([
                 '-pix_fmt', 'yuv420p',  # Convert to standard YUV420p format
                 '-c:v', codec,
                 '-preset', preset,
@@ -163,7 +173,7 @@ class RTSPStreamer:
                 '-rtsp_transport', 'tcp',
                 '-muxdelay', '0.1',
                 f'rtsp://localhost:{port}/{path}'
-            ]
+            ])
             
             # On Windows, hide console window
             startupinfo = None
@@ -208,6 +218,46 @@ class RTSPStreamer:
         except Exception as e:
             self._log_status(f"Error starting FFmpeg: {e}")
             return False
+    
+    def _build_watermark_filter(self, width: int, height: int) -> str:
+        """Build FFmpeg filter string for watermark"""
+        wm_type = self.config.get("watermark_type", "text")
+        wm_position = self.config.get("watermark_position", "top-right")
+        
+        # Calculate position coordinates
+        positions = {
+            "top-left": "10:10",
+            "top-right": f"{width}-tw-10:10",
+            "bottom-left": f"10:{height}-th-10",
+            "bottom-right": f"{width}-tw-10:{height}-th-10",
+            "center": f"({width}-tw)/2:({height}-th)/2"
+        }
+        pos = positions.get(wm_position, positions["top-right"])
+        
+        if wm_type == "text":
+            text = self.config.get("watermark_text", "Camera Stream")
+            # Escape special characters for FFmpeg
+            text = text.replace(":", "\\:").replace("'", "'").replace("[", "\\[").replace("]", "\\]")
+            return f"drawtext=text='{text}':fontcolor=white:fontsize=24:box=1:boxcolor=black@0.5:boxborderw=5:x={pos.split(':')[0]}:y={pos.split(':')[1]}"
+        
+        elif wm_type == "timestamp":
+            text = self.config.get("watermark_text", "Camera Stream")
+            text = text.replace(":", "\\:").replace("'", "'").replace("[", "\\[").replace("]", "\\]")
+            # Add timestamp using FFmpeg's text expansion
+            return f"drawtext=text='{text} %{{localtime\\:%Y-%m-%d %H\\\\:%M\\\\:%S}}':fontcolor=white:fontsize=20:box=1:boxcolor=black@0.5:boxborderw=5:x={pos.split(':')[0]}:y={pos.split(':')[1]}"
+        
+        elif wm_type == "image":
+            import os
+            image_path = self.config.get("watermark_image_path", "")
+            if image_path and os.path.exists(image_path):
+                # Escape path for FFmpeg
+                image_path = image_path.replace("\\", "/").replace(":", "\\:")
+                return f"movie={image_path}[wm];[in][wm]overlay={pos.split(':')[0]}:{pos.split(':')[1]}[out]"
+            else:
+                self._log_status("Warning: Watermark image not found, skipping watermark")
+                return ""
+        
+        return ""
     
     def _stream_loop(self):
         """Main streaming loop - captures frames and pipes to FFmpeg"""

@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QPushButton, QLabel, QComboBox, QSpinBox, 
     QTextEdit, QGroupBox, QGridLayout, QLineEdit,
-    QMessageBox, QSystemTrayIcon, QMenu
+    QMessageBox, QSystemTrayIcon, QMenu, QCheckBox, QFileDialog
 )
 from PySide6.QtCore import Qt, QTimer, Signal, QThread
 from PySide6.QtGui import QIcon, QAction
@@ -88,6 +88,59 @@ class StreamerMainWindow(QMainWindow):
         
         config_group.setLayout(config_layout)
         main_layout.addWidget(config_group)
+        
+        # Watermark configuration group
+        watermark_group = QGroupBox("Watermark Settings")
+        watermark_layout = QGridLayout()
+        
+        # Enable watermark checkbox
+        self.watermark_enabled = QCheckBox("Enable Watermark")
+        self.watermark_enabled.setChecked(self.config.get("watermark_enabled", False))
+        self.watermark_enabled.stateChanged.connect(self.toggle_watermark_controls)
+        watermark_layout.addWidget(self.watermark_enabled, 0, 0, 1, 3)
+        
+        # Watermark type
+        watermark_layout.addWidget(QLabel("Type:"), 1, 0)
+        self.watermark_type = QComboBox()
+        self.watermark_type.addItems(["Text", "Image", "Timestamp"])
+        watermark_type_value = self.config.get("watermark_type", "text")
+        self.watermark_type.setCurrentText(watermark_type_value.capitalize())
+        self.watermark_type.currentTextChanged.connect(self.on_watermark_type_changed)
+        watermark_layout.addWidget(self.watermark_type, 1, 1, 1, 2)
+        
+        # Text input
+        watermark_layout.addWidget(QLabel("Text:"), 2, 0)
+        self.watermark_text = QLineEdit()
+        self.watermark_text.setText(self.config.get("watermark_text", "Camera Stream"))
+        watermark_layout.addWidget(self.watermark_text, 2, 1, 1, 2)
+        
+        # Image file picker
+        watermark_layout.addWidget(QLabel("Image:"), 3, 0)
+        self.watermark_image = QLineEdit()
+        self.watermark_image.setText(self.config.get("watermark_image_path", ""))
+        self.watermark_image.setPlaceholderText("Select image file...")
+        watermark_layout.addWidget(self.watermark_image, 3, 1)
+        
+        self.watermark_browse_btn = QPushButton("Browse")
+        self.watermark_browse_btn.clicked.connect(self.browse_watermark_image)
+        watermark_layout.addWidget(self.watermark_browse_btn, 3, 2)
+        
+        # Position
+        watermark_layout.addWidget(QLabel("Position:"), 4, 0)
+        self.watermark_position = QComboBox()
+        self.watermark_position.addItems(["Top Left", "Top Right", "Bottom Left", "Bottom Right", "Center"])
+        position_value = self.config.get("watermark_position", "top-right")
+        position_map = {"top-left": "Top Left", "top-right": "Top Right", 
+                       "bottom-left": "Bottom Left", "bottom-right": "Bottom Right", "center": "Center"}
+        self.watermark_position.setCurrentText(position_map.get(position_value, "Top Right"))
+        watermark_layout.addWidget(self.watermark_position, 4, 1, 1, 2)
+        
+        watermark_group.setLayout(watermark_layout)
+        main_layout.addWidget(watermark_group)
+        
+        # Initialize watermark controls state
+        self.toggle_watermark_controls()
+        self.on_watermark_type_changed(self.watermark_type.currentText())
         
         # RTSP URL display
         url_group = QGroupBox("Stream URL")
@@ -172,6 +225,39 @@ class StreamerMainWindow(QMainWindow):
         clipboard.setText(self.url_label.text())
         self.log_message("URL copied to clipboard")
     
+    def toggle_watermark_controls(self):
+        """Enable/disable watermark controls based on checkbox"""
+        enabled = self.watermark_enabled.isChecked()
+        self.watermark_type.setEnabled(enabled)
+        self.watermark_text.setEnabled(enabled)
+        self.watermark_image.setEnabled(enabled)
+        self.watermark_browse_btn.setEnabled(enabled)
+        self.watermark_position.setEnabled(enabled)
+        if enabled:
+            self.on_watermark_type_changed(self.watermark_type.currentText())
+    
+    def on_watermark_type_changed(self, wm_type):
+        """Show/hide appropriate controls based on watermark type"""
+        is_text = wm_type == "Text"
+        is_timestamp = wm_type == "Timestamp"
+        is_image = wm_type == "Image"
+        
+        enabled = self.watermark_enabled.isChecked()
+        self.watermark_text.setVisible((is_text or is_timestamp) and enabled)
+        self.watermark_image.setVisible(is_image and enabled)
+        self.watermark_browse_btn.setVisible(is_image and enabled)
+    
+    def browse_watermark_image(self):
+        """Open file dialog to select watermark image"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "Select Watermark Image",
+            "",
+            "Image Files (*.png *.jpg *.jpeg *.bmp)"
+        )
+        if file_path:
+            self.watermark_image.setText(file_path)
+    
     def start_streaming(self):
         """Start streaming"""
         # Update config from UI
@@ -181,6 +267,15 @@ class StreamerMainWindow(QMainWindow):
         self.config.set("video_fps", self.fps_spin.value())
         self.config.set("rtsp_port", self.port_spin.value())
         self.config.set("rtsp_path", self.path_edit.text())
+        
+        # Update watermark config
+        self.config.set("watermark_enabled", self.watermark_enabled.isChecked())
+        self.config.set("watermark_type", self.watermark_type.currentText().lower())
+        self.config.set("watermark_text", self.watermark_text.text())
+        self.config.set("watermark_image_path", self.watermark_image.text())
+        position_map = {"Top Left": "top-left", "Top Right": "top-right", 
+                       "Bottom Left": "bottom-left", "Bottom Right": "bottom-right", "Center": "center"}
+        self.config.set("watermark_position", position_map.get(self.watermark_position.currentText(), "top-right"))
         
         # Save config
         self.config.save_config()

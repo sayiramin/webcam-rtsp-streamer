@@ -21,6 +21,12 @@ class Config:
         "video_bitrate": "2M",
         "preset": "ultrafast",
         "tune": "zerolatency",
+        # Watermark settings
+        "watermark_enabled": False,
+        "watermark_type": "text",  # text, image, timestamp
+        "watermark_text": "Camera Stream",
+        "watermark_image_path": "",
+        "watermark_position": "top-right",  # top-left, top-right, bottom-left, bottom-right, center
     }
     
     def __init__(self, config_file: str = "config.json"):
