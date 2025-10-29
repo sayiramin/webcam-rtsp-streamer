@@ -34,11 +34,11 @@ class Config:
     # Quality presets optimized for different network conditions
     QUALITY_PRESETS = {
         "low": {
-            "name": "Low (450 Mbps / Slow Network)",
+            "name": "Low (450 MHz / Up to 5 Mbps)",
             "width": 640,
             "height": 360,
-            "fps": 15,
-            "bitrate": "500k",
+            "fps": 20,
+            "bitrate": "800k",
             "preset": "ultrafast",
         },
         "medium": {
