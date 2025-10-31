@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QPushButton, QLabel, QComboBox, QSpinBox, 
     QTextEdit, QGroupBox, QGridLayout, QLineEdit,
-    QMessageBox, QSystemTrayIcon, QMenu, QCheckBox, QFileDialog
+    QMessageBox, QSystemTrayIcon, QMenu, QCheckBox, QFileDialog,
+    QTabWidget
 )
 from PySide6.QtCore import Qt, QTimer, Signal, QThread
 from PySide6.QtGui import QIcon, QAction
@@ -35,6 +36,21 @@ class StreamerMainWindow(QMainWindow):
         
         main_layout = QVBoxLayout(central_widget)
         
+        # Create tab widget
+        tab_widget = QTabWidget()
+        main_layout.addWidget(tab_widget)
+        
+        # Main tab
+        main_tab = QWidget()
+        tab_widget.addTab(main_tab, "Streaming")
+        
+        # Watermark tab
+        watermark_tab = QWidget()
+        tab_widget.addTab(watermark_tab, "Watermark")
+        
+        # Setup main tab layout
+        main_tab_layout = QVBoxLayout(main_tab)
+        
         # Camera selection group
         camera_group = QGroupBox("Camera Settings")
         camera_layout = QGridLayout()
@@ -48,7 +64,7 @@ class StreamerMainWindow(QMainWindow):
         camera_layout.addWidget(self.refresh_cameras_btn, 0, 2)
         
         camera_group.setLayout(camera_layout)
-        main_layout.addWidget(camera_group)
+        main_tab_layout.addWidget(camera_group)
         
         # Stream configuration group
         config_group = QGroupBox("Stream Configuration")
@@ -104,56 +120,111 @@ class StreamerMainWindow(QMainWindow):
         config_layout.addWidget(self.path_edit, 4, 1)
         
         config_group.setLayout(config_layout)
-        main_layout.addWidget(config_group)
+        main_tab_layout.addWidget(config_group)
+        
+        # RTSP URL display
+        url_group = QGroupBox("Stream URL")
+        url_layout = QVBoxLayout()
+        
+        self.url_label = QLabel()
+        self.url_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.url_label.setStyleSheet("QLabel { background-color: #2d2d2d; color: #ffffff; padding: 10px; font-family: monospace; font-size: 14px; border-radius: 4px; }")
+        self.update_url_display()
+        url_layout.addWidget(self.url_label)
+        
+        self.copy_url_btn = QPushButton("Copy URL")
+        self.copy_url_btn.clicked.connect(self.copy_url)
+        url_layout.addWidget(self.copy_url_btn)
+        
+        url_group.setLayout(url_layout)
+        main_tab_layout.addWidget(url_group)
+        
+        # Control buttons
+        button_layout = QHBoxLayout()
+        
+        self.start_btn = QPushButton("Start Streaming")
+        self.start_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-weight: bold; }")
+        self.start_btn.clicked.connect(self.start_streaming)
+        button_layout.addWidget(self.start_btn)
+        
+        self.stop_btn = QPushButton("Stop Streaming")
+        self.stop_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; padding: 10px; font-weight: bold; }")
+        self.stop_btn.clicked.connect(self.stop_streaming)
+        self.stop_btn.setEnabled(False)
+        button_layout.addWidget(self.stop_btn)
+        
+        main_tab_layout.addLayout(button_layout)
+        
+        # Setup watermark tab
+        self.setup_watermark_tab(watermark_tab)
+        
+        # Status/Log area (add to main layout, not tab)
+        log_group = QGroupBox("Status Log")
+        log_layout = QVBoxLayout()
+        
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+        self.log_text.setMaximumHeight(150)
+        log_layout.addWidget(self.log_text)
+        
+        log_group.setLayout(log_layout)
+        main_layout.addWidget(log_group)
+    
+    def setup_watermark_tab(self, watermark_tab):
+        """Setup watermark configuration tab"""
+        watermark_layout = QVBoxLayout(watermark_tab)
         
         # Watermark configuration group
         watermark_group = QGroupBox("Watermark Settings")
-        watermark_layout = QGridLayout()
+        watermark_grid = QGridLayout()
         
         # Enable watermark checkbox
         self.watermark_enabled = QCheckBox("Enable Watermark")
         self.watermark_enabled.setChecked(self.config.get("watermark_enabled", False))
         self.watermark_enabled.stateChanged.connect(self.toggle_watermark_controls)
-        watermark_layout.addWidget(self.watermark_enabled, 0, 0, 1, 3)
+        watermark_grid.addWidget(self.watermark_enabled, 0, 0, 1, 3)
         
         # Watermark type
-        watermark_layout.addWidget(QLabel("Type:"), 1, 0)
+        watermark_grid.addWidget(QLabel("Type:"), 1, 0)
         self.watermark_type = QComboBox()
         self.watermark_type.addItems(["Text", "Image", "Timestamp"])
         watermark_type_value = self.config.get("watermark_type", "text")
         self.watermark_type.setCurrentText(watermark_type_value.capitalize())
         self.watermark_type.currentTextChanged.connect(self.on_watermark_type_changed)
-        watermark_layout.addWidget(self.watermark_type, 1, 1, 1, 2)
+        watermark_grid.addWidget(self.watermark_type, 1, 1, 1, 2)
         
         # Text input
-        watermark_layout.addWidget(QLabel("Text:"), 2, 0)
+        watermark_grid.addWidget(QLabel("Text:"), 2, 0)
         self.watermark_text = QLineEdit()
         self.watermark_text.setText(self.config.get("watermark_text", "Camera Stream"))
-        watermark_layout.addWidget(self.watermark_text, 2, 1, 1, 2)
+        watermark_grid.addWidget(self.watermark_text, 2, 1, 1, 2)
         
         # Image file picker
-        watermark_layout.addWidget(QLabel("Image:"), 3, 0)
+        watermark_grid.addWidget(QLabel("Image:"), 3, 0)
         self.watermark_image = QLineEdit()
         self.watermark_image.setText(self.config.get("watermark_image_path", ""))
         self.watermark_image.setPlaceholderText("Select image file...")
-        watermark_layout.addWidget(self.watermark_image, 3, 1)
+        watermark_grid.addWidget(self.watermark_image, 3, 1)
         
         self.watermark_browse_btn = QPushButton("Browse")
         self.watermark_browse_btn.clicked.connect(self.browse_watermark_image)
-        watermark_layout.addWidget(self.watermark_browse_btn, 3, 2)
+        watermark_grid.addWidget(self.watermark_browse_btn, 3, 2)
         
         # Position
-        watermark_layout.addWidget(QLabel("Position:"), 4, 0)
+        watermark_grid.addWidget(QLabel("Position:"), 4, 0)
         self.watermark_position = QComboBox()
         self.watermark_position.addItems(["Top Left", "Top Right", "Bottom Left", "Bottom Right", "Center"])
         position_value = self.config.get("watermark_position", "top-right")
         position_map = {"top-left": "Top Left", "top-right": "Top Right", 
                        "bottom-left": "Bottom Left", "bottom-right": "Bottom Right", "center": "Center"}
         self.watermark_position.setCurrentText(position_map.get(position_value, "Top Right"))
-        watermark_layout.addWidget(self.watermark_position, 4, 1, 1, 2)
+        watermark_grid.addWidget(self.watermark_position, 4, 1, 1, 2)
         
-        watermark_group.setLayout(watermark_layout)
-        main_layout.addWidget(watermark_group)
+        watermark_group.setLayout(watermark_grid)
+        watermark_layout.addWidget(watermark_group)
+        
+        # Add stretch to push everything to top
+        watermark_layout.addStretch()
         
         # Initialize watermark controls state
         self.toggle_watermark_controls()
