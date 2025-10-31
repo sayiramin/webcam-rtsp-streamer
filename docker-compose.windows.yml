@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  webcam-streamer:
+    build: .
+    ports:
+      - "8554:8554"
+    volumes:
+      - ./config.json:/app/config.json
+      - /dev:/dev  # For camera access on Windows with WSL2
+    environment:
+      - CAMERA_INDEX=0
+    privileged: true
