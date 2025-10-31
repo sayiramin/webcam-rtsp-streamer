@@ -43,7 +43,7 @@ Convert your laptop webcam into an RTSP streaming server with a simple, user-fri
 - 💾 Persistent configuration settings
 - 🔧 Low-latency streaming optimized for real-time applications
 
-## 🐳 Quick Start with Docker (Recommended)
+## 🐳 Quick Start with Docker (Recommended for Linux/macOS)
 
 **Skip all installation headaches! Use Docker for instant setup:**
 
@@ -64,6 +64,8 @@ rtsp://localhost:8554/stream
 ```
 
 **That's it!** No MediaMTX installation, no FFmpeg setup, no dependency issues.
+
+> **⚠️ Windows Users**: Docker camera access on Windows is complex due to WSL2 limitations. Consider [native installation](#manual-installation) instead. See [WINDOWS_DOCKER.md](WINDOWS_DOCKER.md) for Docker options.
 
 📖 **Full Docker guide**: [DOCKER_SETUP.md](DOCKER_SETUP.md)
 
