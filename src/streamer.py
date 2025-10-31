@@ -31,8 +31,30 @@ class RTSPStreamer:
     def _start_mediamtx(self):
         """Start MediaMTX RTSP server as subprocess"""
         try:
-            # Check if MediaMTX is installed
-            mediamtx_path = subprocess.check_output(['which', 'mediamtx'], text=True).strip()
+            # Check for bundled MediaMTX first (portable package)
+            import os
+            script_dir = os.path.dirname(os.path.dirname(__file__))
+            bundled_mediamtx = os.path.join(script_dir, 'mediamtx.exe')
+            
+            if os.path.exists(bundled_mediamtx):
+                mediamtx_path = bundled_mediamtx
+                self._log_status("Using bundled MediaMTX")
+            else:
+                # Try system MediaMTX
+                try:
+                    if platform.system() == 'Windows':
+                        # On Windows, try to find mediamtx.exe in PATH
+                        result = subprocess.run(['where', 'mediamtx'], capture_output=True, text=True)
+                        if result.returncode == 0:
+                            mediamtx_path = result.stdout.strip()
+                        else:
+                            raise FileNotFoundError("MediaMTX not found in PATH")
+                    else:
+                        # On Unix systems
+                        mediamtx_path = subprocess.check_output(['which', 'mediamtx'], text=True).strip()
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    self._log_status("Warning: MediaMTX not found. Install with: brew install mediamtx")
+                    return False
             
             # Get config file path
             import os
