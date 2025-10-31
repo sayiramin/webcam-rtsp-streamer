@@ -8,8 +8,8 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
     docker run -p 8554:8554 --device=/dev/video0 webcam-streamer
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    docker run -p 8554:8554 --device=/dev/video0 webcam-streamer
+    # macOS - no device mapping needed, use privileged mode
+    docker run -p 8554:8554 --privileged webcam-streamer
 else
     # Windows/WSL2
     docker run -p 8554:8554 --privileged webcam-streamer
