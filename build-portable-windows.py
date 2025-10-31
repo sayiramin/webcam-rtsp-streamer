@@ -117,10 +117,10 @@ pause
 
 ## What's Included
 
-- ✅ MediaMTX RTSP server (mediamtx.exe)
-- ✅ FFmpeg video encoder (ffmpeg.exe)  
-- ✅ Webcam streamer application (src/)
-- ✅ All configuration files
+- [OK] MediaMTX RTSP server (mediamtx.exe)
+- [OK] FFmpeg video encoder (ffmpeg.exe)  
+- [OK] Webcam streamer application (src/)
+- [OK] All configuration files
 
 ## No Installation Required!
 
@@ -137,7 +137,7 @@ Everything is bundled - no need to install MediaMTX or FFmpeg separately.
 GitHub: https://github.com/sayiramin/webcam-rtsp-streamer
 '''
     
-    with open(package_dir / "README.txt", 'w') as f:
+    with open(package_dir / "README.txt", 'w', encoding='utf-8') as f:
         f.write(readme_content)
     
     # 7. Create final zip package
