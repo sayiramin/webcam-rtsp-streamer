@@ -230,61 +230,6 @@ class StreamerMainWindow(QMainWindow):
         self.toggle_watermark_controls()
         self.on_watermark_type_changed(self.watermark_type.currentText())
         
-        # RTSP URL display
-        url_group = QGroupBox("Stream URL")
-        url_layout = QVBoxLayout()
-        
-        self.url_label = QLabel()
-        self.url_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.url_label.setStyleSheet("QLabel { background-color: #2d2d2d; color: #ffffff; padding: 10px; font-family: monospace; font-size: 14px; border-radius: 4px; }")
-        self.update_url_display()
-        url_layout.addWidget(self.url_label)
-        
-        self.copy_url_btn = QPushButton("Copy URL")
-        self.copy_url_btn.clicked.connect(self.copy_url)
-        url_layout.addWidget(self.copy_url_btn)
-        
-        url_group.setLayout(url_layout)
-        main_layout.addWidget(url_group)
-        
-        # Control buttons
-        button_layout = QHBoxLayout()
-        
-        self.start_btn = QPushButton("Start Streaming")
-        self.start_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-weight: bold; }")
-        self.start_btn.clicked.connect(self.start_streaming)
-        button_layout.addWidget(self.start_btn)
-        
-        self.stop_btn = QPushButton("Stop Streaming")
-        self.stop_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; padding: 10px; font-weight: bold; }")
-        self.stop_btn.clicked.connect(self.stop_streaming)
-        self.stop_btn.setEnabled(False)
-        button_layout.addWidget(self.stop_btn)
-        
-        main_layout.addLayout(button_layout)
-        
-        # Status/Log area
-        log_group = QGroupBox("Status Log")
-        log_layout = QVBoxLayout()
-        
-        self.log_text = QTextEdit()
-        self.log_text.setReadOnly(True)
-        self.log_text.setMaximumHeight(150)
-        log_layout.addWidget(self.log_text)
-        
-        log_group.setLayout(log_layout)
-        main_layout.addWidget(log_group)
-        
-        # Support info
-        support_label = QLabel('Support: sayir.amin@gmail.com')
-        support_label.setStyleSheet("QLabel { color: #666; font-size: 10px; }")
-        support_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(support_label)
-        
-        # Connect value change signals to update URL
-        self.port_spin.valueChanged.connect(self.update_url_display)
-        self.path_edit.textChanged.connect(self.update_url_display)
-        
     def load_cameras(self):
         """Load available cameras into combo box"""
         self.log_message("Detecting cameras...")
