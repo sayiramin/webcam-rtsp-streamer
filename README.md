@@ -43,6 +43,32 @@ Convert your laptop webcam into an RTSP streaming server with a simple, user-fri
 - 💾 Persistent configuration settings
 - 🔧 Low-latency streaming optimized for real-time applications
 
+## 🐳 Quick Start with Docker (Recommended)
+
+**Skip all installation headaches! Use Docker for instant setup:**
+
+### 1. Install Docker Desktop
+- **Windows/Mac**: Download from [docker.com](https://www.docker.com/products/docker-desktop/)
+- **Linux**: `sudo apt install docker.io`
+
+### 2. Run the streamer
+```bash
+git clone https://github.com/sayiramin/webcam-rtsp-streamer.git
+cd webcam-rtsp-streamer
+./run-docker.sh
+```
+
+### 3. Connect to stream
+```
+rtsp://localhost:8554/stream
+```
+
+**That's it!** No MediaMTX installation, no FFmpeg setup, no dependency issues.
+
+📖 **Full Docker guide**: [DOCKER_SETUP.md](DOCKER_SETUP.md)
+
+---
+
 ## Requirements
 
 ### System Requirements
@@ -58,6 +84,10 @@ Convert your laptop webcam into an RTSP streaming server with a simple, user-fri
 - pyinstaller >= 6.9.0 (for building executables)
 
 ## Installation
+
+> **💡 Prefer Docker?** Skip this section and use the [Docker Quick Start](#-quick-start-with-docker-recommended) above for zero-hassle setup.
+
+### Manual Installation
 
 ### macOS Setup
 
