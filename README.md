@@ -38,38 +38,37 @@ Convert your laptop webcam into an RTSP streaming server with a simple, user-fri
 - 🎥 Stream webcam video over RTSP protocol
 - 🖥️ Cross-platform: Works on Windows, macOS, and Linux
 - ⚙️ Configurable resolution, FPS, and streaming parameters
-- 🎛️ Easy-to-use graphical interface
+- 🎛️ Easy-to-use graphical interface with tabbed layout
 - 📹 Multiple camera support with auto-detection
 - 💾 Persistent configuration settings
 - 🔧 Low-latency streaming optimized for real-time applications
+- 🎨 Watermark support (text, image, timestamp)
 
-## 🐳 Quick Start with Docker (Recommended for Linux/macOS)
+## 🚀 Quick Start
 
-**Skip all installation headaches! Use Docker for instant setup:**
+### Windows (Portable - No Installation Required)
+1. **Download**: Clone or download this repository
+2. **Build**: Run `python build-portable-windows.py`
+3. **Extract**: Extract `WebcamStreamer-Portable-Windows.zip`
+4. **Run**: Double-click `run.bat`
+5. **Stream**: Connect to `rtsp://localhost:8554/stream`
 
-### 1. Install Docker Desktop
-- **Windows/Mac**: Download from [docker.com](https://www.docker.com/products/docker-desktop/)
-- **Linux**: `sudo apt install docker.io`
-
-### 2. Run the streamer
+### macOS/Linux (Native Installation)
 ```bash
+# Install dependencies
+brew install ffmpeg mediamtx  # macOS
+# sudo apt install ffmpeg && install MediaMTX manually  # Linux
+
+# Clone and setup
 git clone https://github.com/sayiramin/webcam-rtsp-streamer.git
 cd webcam-rtsp-streamer
-./run-docker.sh
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Run
+python src/main.py
 ```
-
-### 3. Connect to stream
-```
-rtsp://localhost:8554/stream
-```
-
-**That's it!** No MediaMTX installation, no FFmpeg setup, no dependency issues.
-
-> **⚠️ Windows Users**: Docker camera access on Windows is complex due to WSL2 limitations. Consider [native installation](#manual-installation) instead. See [WINDOWS_DOCKER.md](WINDOWS_DOCKER.md) for Docker options.
-
-📖 **Full Docker guide**: [DOCKER_SETUP.md](DOCKER_SETUP.md)
-
----
 
 ## Requirements
 
@@ -85,78 +84,50 @@ rtsp://localhost:8554/stream
 - numpy >= 1.26.0
 - pyinstaller >= 6.9.0 (for building executables)
 
-## Installation
+## Installation & Setup
 
-> **💡 Prefer Docker?** Skip this section and use the [Docker Quick Start](#-quick-start-with-docker-recommended) above for zero-hassle setup.
+### Windows Setup (Portable Package)
 
-### Manual Installation
+**No installation required! Everything is bundled.**
 
-### macOS Setup
-
-1. **Install Homebrew** (if not already installed):
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
-
-2. **Install FFmpeg and MediaMTX**:
-   ```bash
-   brew install ffmpeg mediamtx
-   ```
-
-3. **Clone the repository**:
-   ```bash
+1. **Clone the repository**:
+   ```cmd
    git clone https://github.com/sayiramin/webcam-rtsp-streamer.git
    cd webcam-rtsp-streamer
    ```
 
-4. **Set up Python virtual environment**:
+2. **Build portable package**:
+   ```cmd
+   python build-portable-windows.py
+   ```
+
+3. **Extract and run**:
+   - Extract `WebcamStreamer-Portable-Windows.zip`
+   - Double-click `run.bat`
+   - Everything is included: MediaMTX, FFmpeg, Python dependencies
+
+**Requirements**: Only Python 3.11+ (the script handles everything else)
+
+### macOS Setup
+
+1. **Install dependencies**:
    ```bash
+   brew install ffmpeg mediamtx
+   ```
+
+2. **Clone and setup**:
+   ```bash
+   git clone https://github.com/sayiramin/webcam-rtsp-streamer.git
+   cd webcam-rtsp-streamer
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
    ```
 
-5. **Run the application**:
-   ```bash
-   python src/main.py
-   ```
+3. **Grant camera permissions**:
+   - System Preferences → Privacy & Security → Camera → Terminal ✓
 
-6. **Grant camera permissions** when prompted by macOS (System Preferences → Privacy & Security → Camera)
-
-### Windows Setup
-
-1. **Install Python 3.11+** from [python.org](https://www.python.org/downloads/)
-
-2. **Install Chocolatey** (package manager) - Open PowerShell as Administrator:
-   ```powershell
-   Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-   ```
-
-3. **Install FFmpeg and MediaMTX**:
-   ```powershell
-   choco install ffmpeg
-   choco install mediamtx
-   ```
-
-   *Alternatively, download manually:*
-   - FFmpeg: [ffmpeg.org/download.html](https://ffmpeg.org/download.html)
-   - MediaMTX: [github.com/bluenviron/mediamtx/releases](https://github.com/bluenviron/mediamtx/releases)
-   - Add both to your system PATH
-
-4. **Clone the repository**:
-   ```bash
-   git clone https://github.com/sayiramin/webcam-rtsp-streamer.git
-   cd webcam-rtsp-streamer
-   ```
-
-5. **Set up Python virtual environment**:
-   ```bash
-   python -m venv venv
-   venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-6. **Run the application**:
+4. **Run**:
    ```bash
    python src/main.py
    ```
@@ -171,27 +142,22 @@ rtsp://localhost:8554/stream
 
 2. **Install MediaMTX**:
    ```bash
-   # Download latest release
    wget https://github.com/bluenviron/mediamtx/releases/download/v1.15.3/mediamtx_v1.15.3_linux_amd64.tar.gz
    tar -xzf mediamtx_v1.15.3_linux_amd64.tar.gz
    sudo mv mediamtx /usr/local/bin/
    sudo chmod +x /usr/local/bin/mediamtx
    ```
 
-3. **Clone the repository**:
+3. **Clone and setup**:
    ```bash
    git clone https://github.com/sayiramin/webcam-rtsp-streamer.git
    cd webcam-rtsp-streamer
-   ```
-
-4. **Set up Python virtual environment**:
-   ```bash
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
    ```
 
-5. **Run the application**:
+4. **Run**:
    ```bash
    python src/main.py
    ```
