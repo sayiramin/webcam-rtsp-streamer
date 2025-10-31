@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install MediaMTX
+RUN wget -O /tmp/mediamtx.tar.gz https://github.com/bluenviron/mediamtx/releases/download/v1.15.3/mediamtx_v1.15.3_linux_amd64.tar.gz \
+    && tar -xzf /tmp/mediamtx.tar.gz -C /usr/local/bin/ \
+    && chmod +x /usr/local/bin/mediamtx \
+    && rm /tmp/mediamtx.tar.gz
+
+# Create test video (color bars)
+RUN ffmpeg -f lavfi -i testsrc=duration=3600:size=1280x720:rate=25 -c:v libx264 -preset ultrafast /tmp/test_video.mp4
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+COPY mediamtx.yml .
+COPY config.json .
+
+# Create test streamer that uses video file instead of camera
+COPY docker-test-streamer.py ./src/
+
+EXPOSE 8554
+CMD ["python", "src/docker-test-streamer.py"]
